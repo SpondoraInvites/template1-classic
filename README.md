@@ -19,6 +19,10 @@ embedded venue map, and one-tap share.
   flanking botanical branches, families side by side, event card grid,
   two-column venue section)
 - Subtle scroll reveals (respects `prefers-reduced-motion`)
+- Ambient finishing touches: drifting gold petals, self-drawing
+  botanical line art, gold-foil names with a slow sheen, paper grain,
+  breathing arch glow, corner flourishes and countdown digit settle
+  (all motion collapses under `prefers-reduced-motion`)
 
 Not in this tier (reserved for Signature / Luxury): photo gallery,
 background music, RSVP, multiple animated scenes, custom typography/colors.
@@ -69,6 +73,12 @@ python3 -m http.server 8080
 
 (Opening `index.html` directly via `file://` also works — only the map iframe
 and clipboard need a real http(s) origin when deployed.)
+
+When previewed on `localhost`, `127.0.0.1` or `file://`, the page forces the
+decorative motion (petals, sways, parallax) on even if your OS reports
+`prefers-reduced-motion` — see the "Local preview override" script in
+`index.html`. Production visitors always get the accessible behaviour
+(motion disabled when their device asks for it).
 
 ## Deploying
 
