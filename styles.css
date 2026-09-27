@@ -20,9 +20,9 @@
   --ink: #22322b;
   --muted: #5f6b60;
 
-  --serif: "Cormorant Garamond", "Noto Serif Bengali", Georgia, serif;
-  --sans: "Manrope", "Noto Serif Bengali", system-ui, sans-serif;
-  --script: "Great Vibes", "Noto Serif Bengali", cursive;
+  --serif: "Cormorant Garamond", "Tiro Bangla", "Noto Serif Bengali", Georgia, serif;
+  --sans: "Manrope", "Hind Siliguri", "Noto Serif Bengali", system-ui, sans-serif;
+  --script: "Great Vibes", "Atma", "Noto Serif Bengali", cursive;
 
   --paper-line: rgba(18, 63, 50, 0.16);
   --gold-line: rgba(201, 162, 77, 0.45);
@@ -1250,3 +1250,13 @@ button:focus-visible {
    breathe. Scoped to html[lang="bn"] — English rendering is untouched. */
 html[lang="bn"] .eyebrow { letter-spacing: 0.12em; }
 html[lang="bn"] .hero__scroll span { letter-spacing: 0.1em; }
+
+/* Bangla typography refinement (appended).
+   Per-glyph fallback keeps English on Cormorant/Vibes/Manrope untouched;
+   Bengali glyphs route to Tiro Bangla (serif), Galada (script) and
+   Hind Siliguri (sans) — loaded in index.html. */
+html[lang="bn"] .section-title,
+html[lang="bn"] .event-card__name { font-weight: 400; } /* Tiro Bangla ships 400 only — avoid synthetic bold */
+html[lang="bn"] .hero__amp { letter-spacing: 0; }
+html[lang="bn"] .hero__name,
+html[lang="bn"] .footer__names { font-weight: 300; } /* Atma Light — thin brush script */

@@ -25,6 +25,7 @@
     en: {
       documentTitleSuffix: "Wedding Invitation",
       nameSep: "&",
+      heroAmp: "&",
       eyebrowWedding: "The Wedding of",
       scroll: "Scroll",
       saveTheDate: "Save the Date",
@@ -57,6 +58,7 @@
     bn: {
       documentTitleSuffix: "বিয়ের আমন্ত্রণ",
       nameSep: "ও",
+      heroAmp: "ও",
       eyebrowWedding: "বিবাহবন্ধনে",
       scroll: "নিচে দেখুন",
       saveTheDate: "তারিখটি মনে রাখুন",
@@ -221,6 +223,11 @@
     });
   }
   window.addEventListener("resize", fitNames);
+  // Re-measure once webfonts are in — late-loading script faces change name
+  // widths, and the arch fit must be computed against the real font.
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(fitNames);
+  }
 
   function formatDateShort() {
     // "24 · 01 · 2027" from weddingDateTime (venue-local via manual parse).
