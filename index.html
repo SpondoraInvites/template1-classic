@@ -47,6 +47,18 @@
     })();
   </script>
 
+  <!-- Restore the visitor's chosen language (EN/বাং) before first paint so
+       Bangla readers don't get a flash of English. -->
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem("invite-lang") === "bn") {
+          document.documentElement.lang = "bn";
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Great+Vibes&family=Manrope:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;600&display=swap" rel="stylesheet" />
@@ -105,7 +117,7 @@
             <span class="seal__initials" data-initials>A&amp;R</span>
           </div>
 
-          <p class="eyebrow eyebrow--light">The Wedding of</p>
+          <p class="eyebrow eyebrow--light" data-i18n="eyebrowWedding">The Wedding of</p>
 
           <h1 class="hero__names">
             <span class="hero__name" data-name1>Ayesha Rahman</span>
@@ -134,7 +146,7 @@
       </div>
 
       <div class="hero__scroll" aria-hidden="true">
-        <span>Scroll</span>
+        <span data-i18n="scroll">Scroll</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 9 l6 6 l6 -6" />
         </svg>
@@ -174,25 +186,25 @@
     <!-- ============ COUNTDOWN ============ -->
     <section class="countdown" id="countdown">
       <div class="countdown__panel">
-        <p class="eyebrow eyebrow--gold">Save the Date</p>
-        <h2 class="section-title">Counting Down<br /><em>to Forever</em></h2>
+        <p class="eyebrow eyebrow--gold" data-i18n="saveTheDate">Save the Date</p>
+        <h2 class="section-title" data-i18n-html="countdownTitle">Counting Down<br /><em>to Forever</em></h2>
 
-        <div class="countdown__grid" role="timer" aria-label="Countdown to the wedding">
+        <div class="countdown__grid" role="timer" aria-label="Countdown to the wedding" data-i18n-aria="countdownAria">
           <div class="countdown__cell">
             <span class="countdown__num" id="cdDays">—</span>
-            <span class="countdown__label">Days</span>
+            <span class="countdown__label" data-i18n="days">Days</span>
           </div>
           <div class="countdown__cell">
             <span class="countdown__num" id="cdHours">—</span>
-            <span class="countdown__label">Hours</span>
+            <span class="countdown__label" data-i18n="hours">Hours</span>
           </div>
           <div class="countdown__cell">
             <span class="countdown__num" id="cdMinutes">—</span>
-            <span class="countdown__label">Minutes</span>
+            <span class="countdown__label" data-i18n="minutes">Minutes</span>
           </div>
           <div class="countdown__cell">
             <span class="countdown__num" id="cdSeconds">—</span>
-            <span class="countdown__label">Seconds</span>
+            <span class="countdown__label" data-i18n="seconds">Seconds</span>
           </div>
         </div>
 
@@ -202,8 +214,8 @@
 
     <!-- ============ EVENTS ============ -->
     <section class="events" id="events">
-      <p class="eyebrow eyebrow--gold">When &amp; Where</p>
-      <h2 class="section-title">The <em>Celebration</em></h2>
+      <p class="eyebrow eyebrow--gold" data-i18n="whenWhere">When &amp; Where</p>
+      <h2 class="section-title" data-i18n-html="eventsTitle">The <em>Celebration</em></h2>
 
       <div class="events__list" id="eventList">
         <!-- Event cards rendered from config.js -->
@@ -254,18 +266,19 @@
     <section class="venue" id="venue">
       <div class="venue__split">
         <div class="venue__info">
-          <p class="eyebrow eyebrow--gold">The Venue</p>
-          <h2 class="section-title">Find Us <em>There</em></h2>
+          <p class="eyebrow eyebrow--gold" data-i18n="theVenue">The Venue</p>
+          <h2 class="section-title" data-i18n-html="venueTitle">Find Us <em>There</em></h2>
 
           <p class="venue__name" data-venue-name>The Grand Ballroom, Le Méridien Dhaka</p>
           <p class="venue__address" data-venue-address>79/B Road No. 7, Banani, Dhaka 1213</p>
-          <a class="link-btn venue__directions" data-directions href="https://www.google.com/maps/search/?api=1&query=Le+M%C3%A9ridien+Dhaka" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+          <a class="link-btn venue__directions" data-directions data-i18n="openInMaps" href="https://www.google.com/maps/search/?api=1&query=Le+M%C3%A9ridien+Dhaka" target="_blank" rel="noopener">Open in Google Maps ↗</a>
         </div>
 
         <div class="venue__frame">
           <iframe
             id="venueMap"
             title="Map to the wedding venue"
+            data-i18n-title="mapTitle"
             src="https://maps.google.com/maps?q=Le%20M%C3%A9ridien%20Dhaka&z=15&output=embed"
             loading="lazy"
             referrerpolicy="no-referrer-when-downgrade"
@@ -302,7 +315,7 @@
           <line x1="8.3" y1="10.8" x2="15.7" y2="7.2" />
           <line x1="8.3" y1="13.2" x2="15.7" y2="16.8" />
         </svg>
-        Share this Invitation
+        <span data-i18n="shareInvitation">Share this Invitation</span>
       </button>
 
       <p class="footer__hashtag" data-hashtag>#AyeshaAndRayhan</p>
@@ -311,8 +324,16 @@
     </footer>
   </main>
 
+  <!-- Language toggle — hidden automatically by script.js when config.js
+       has no "bn" block -->
+  <button class="lang-toggle" id="langToggle" type="button" aria-label="Switch to Bangla">
+    <span class="lang-toggle__opt" data-lang-opt="en">EN</span>
+    <span class="lang-toggle__sep" aria-hidden="true">|</span>
+    <span class="lang-toggle__opt" data-lang-opt="bn" lang="bn">বাং</span>
+  </button>
+
   <!-- Floating share pill -->
-  <button class="share-fab" id="shareFab" type="button" aria-label="Share this invitation">
+  <button class="share-fab" id="shareFab" type="button" aria-label="Share this invitation" data-i18n-aria="shareAria">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="6" cy="12" r="2.6" />
       <circle cx="18" cy="6" r="2.6" />
@@ -320,7 +341,7 @@
       <line x1="8.3" y1="10.8" x2="15.7" y2="7.2" />
       <line x1="8.3" y1="13.2" x2="15.7" y2="16.8" />
     </svg>
-    <span>Share</span>
+    <span data-i18n="share">Share</span>
   </button>
 
   <div class="toast" id="toast" role="status" aria-live="polite">Link copied to clipboard</div>

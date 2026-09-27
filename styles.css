@@ -1206,3 +1206,47 @@ button:focus-visible {
   from { opacity: 0.25; transform: translateY(-4px); }
   to { opacity: 1; transform: none; }
 }
+
+/* ============================================================
+   Language toggle (EN / বাং)
+   Appended block — same pill language as the share FAB
+   (cream fill, gold hairline, 999px radius). No existing
+   rule above is modified.
+   ============================================================ */
+.lang-toggle {
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  z-index: 60; /* same layer as the share pill, below the toast */
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--emerald);
+  background: var(--cream-soft);
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px -10px rgba(11, 43, 33, 0.55);
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.lang-toggle[hidden] { display: none; }
+
+.lang-toggle__opt { opacity: 0.5; transition: opacity 0.25s ease; }
+.lang-toggle__opt.is-active { opacity: 1; }
+.lang-toggle__opt[data-lang-opt="en"] { letter-spacing: 0.18em; }
+.lang-toggle__opt[data-lang-opt="bn"] { letter-spacing: 0.02em; }
+
+.lang-toggle__sep { opacity: 0.35; font-weight: 400; }
+
+.lang-toggle:hover,
+.lang-toggle:focus-visible { background: var(--gold-soft); }
+
+/* Bangla mode: soften the Latin display-tracking so Bengali glyphs
+   breathe. Scoped to html[lang="bn"] — English rendering is untouched. */
+html[lang="bn"] .eyebrow { letter-spacing: 0.12em; }
+html[lang="bn"] .hero__scroll span { letter-spacing: 0.1em; }

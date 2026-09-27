@@ -63,6 +63,28 @@ All colours are CSS variables at the top of `styles.css`:
 
 Change these three and the whole page follows.
 
+## Languages (English / বাংলা)
+
+The invite ships with a fixed top-right **EN | বাং** toggle. English is the
+default; first-time visitors whose browser language starts with `bn` get
+Bangla automatically. The choice is remembered in `localStorage`
+(`invite-lang`) and restored on the next visit.
+
+- **Client content** is localised through the optional `bn:` block in
+  `config.js` — a mirror of the English fields (names, families, events,
+  venue, closing line…). Objects merge key by key, so any field you omit
+  falls back to its English value; the `events` array replaces wholesale
+  (include `mapQuery`/`cal*` fields there).
+- **UI strings** (headings, countdown labels, buttons, toast, aria-labels)
+  live in the `UI` dictionary at the top of `script.js`.
+- In Bangla mode, generated numerals (countdown, footer date) render as
+  Bangla digits (০–৯) automatically. Write dates/times/addresses in the
+  `bn:` block with Bangla digits directly.
+- Delete the `bn:` block and the toggle hides itself — the site becomes
+  English-only, exactly as before the feature existed.
+- `Noto Serif Bengali` is already in every font stack, so no font or CSS
+  work is needed for new Bangla content.
+
 ## Running locally
 
 ```bash

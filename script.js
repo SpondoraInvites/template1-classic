@@ -13,38 +13,196 @@
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
 
-  /* ============ 1. Hydrate simple text slots ============ */
-  var slots = {
-    "data-initials": cfg.couple.initials,
-    "data-name1": cfg.couple.name1,
-    "data-name2": cfg.couple.name2,
-    "data-date-display": cfg.dateDisplay,
-    "data-city": cfg.city,
-    "data-blessing": cfg.blessing,
-    "data-welcome-eyebrow": cfg.welcome.eyebrow,
-    "data-parents1": cfg.welcome.parents1,
-    "data-parents2": cfg.welcome.parents2,
-    "data-invite-line": cfg.welcome.inviteLine,
-    "data-countdown-note": cfg.countdownNote,
-    "data-venue-name": cfg.venue.name,
-    "data-venue-address": (cfg.venue.address || ""),
-    "data-closing": cfg.closing,
-    "data-footer-names": cfg.couple.name1 + " & " + cfg.couple.name2,
-    "data-footer-date": formatDateShort() + " \u00B7 " + cfg.city.replace(", Bangladesh", "").replace(/,.*/, ""),
-    "data-hashtag": cfg.couple.hashtag,
-    "data-credit": cfg.credit,
+  /* ============ 0. Language / i18n ============
+     English is the default. First-time visitors whose browser language
+     starts with "bn" get Bangla; the choice is remembered in localStorage.
+     UI chrome strings live in UI below. Client content is localised via the
+     optional "bn" block in config.js (missing keys fall back to English).
+     With no "bn" block the toggle hides itself and the site stays English. */
+  var LANG_KEY = "invite-lang";
+
+  var UI = {
+    en: {
+      documentTitleSuffix: "Wedding Invitation",
+      nameSep: "&",
+      eyebrowWedding: "The Wedding of",
+      scroll: "Scroll",
+      saveTheDate: "Save the Date",
+      countdownTitle: "Counting Down<br /><em>to Forever</em>",
+      days: "Days",
+      hours: "Hours",
+      minutes: "Minutes",
+      seconds: "Seconds",
+      countdownAria: "Countdown to the wedding",
+      whenWhere: "When & Where",
+      eventsTitle: "The <em>Celebration</em>",
+      theVenue: "The Venue",
+      venueTitle: "Find Us <em>There</em>",
+      mapTitle: "Map to the wedding venue",
+      openInMaps: "Open in Google Maps \u2197",
+      shareInvitation: "Share this Invitation",
+      shareAria: "Share this invitation",
+      share: "Share",
+      viewOnMap: "View on Map \u2197",
+      addToCalendar: "Add to Calendar \u2197",
+      labelDate: "Date",
+      labelTime: "Time",
+      labelVenue: "Venue",
+      labelAddress: "Address",
+      linkCopied: "Link copied to clipboard",
+      shareText: "You\u2019re invited \u2014 {names} \u00B7 {date} \u00B7 {city}",
+      calendarDetails: "We would be honoured by your presence. {hashtag}",
+      switchTo: "Switch to Bangla",
+    },
+    bn: {
+      documentTitleSuffix: "বিয়ের আমন্ত্রণ",
+      nameSep: "ও",
+      eyebrowWedding: "বিবাহবন্ধনে",
+      scroll: "নিচে দেখুন",
+      saveTheDate: "তারিখটি মনে রাখুন",
+      countdownTitle: "মুহূর্ত গুনছি<br /><em>চিরকালের জন্য</em>",
+      days: "দিন",
+      hours: "ঘণ্টা",
+      minutes: "মিনিট",
+      seconds: "সেকেন্ড",
+      countdownAria: "বিয়ের কাউন্টডাউন",
+      whenWhere: "কখন ও কোথায়",
+      eventsTitle: "<em>উদ্‌যাপন</em>",
+      theVenue: "স্থান",
+      venueTitle: "আমাদের খুঁজুন <em>এখানে</em>",
+      mapTitle: "বিয়ের স্থানের মানচিত্র",
+      openInMaps: "গুগল ম্যাপে খুলুন \u2197",
+      shareInvitation: "এই আমন্ত্রণটি শেয়ার করুন",
+      shareAria: "এই আমন্ত্রণটি শেয়ার করুন",
+      share: "শেয়ার",
+      viewOnMap: "মানচিত্রে দেখুন \u2197",
+      addToCalendar: "ক্যালেন্ডারে যোগ করুন \u2197",
+      labelDate: "তারিখ",
+      labelTime: "সময়",
+      labelVenue: "স্থান",
+      labelAddress: "ঠিকানা",
+      linkCopied: "লিংক কপি হয়েছে",
+      shareText: "আপনি আমন্ত্রিত \u2014 {names} \u00B7 {date} \u00B7 {city}",
+      calendarDetails: "আপনাদের উপস্থিতিই আমাদের সৌভাগ্য। {hashtag}",
+      switchTo: "ইংরেজিতে পরিবর্তন করুন",
+    },
   };
 
-  Object.keys(slots).forEach(function (attr) {
-    var el = $("[" + attr + "]");
-    if (el) el.textContent = slots[attr];
-  });
+  var BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
 
-  // Document title & social meta follow the couple.
-  var title = cfg.couple.name1 + " & " + cfg.couple.name2 + " \u2014 Wedding Invitation";
-  document.title = title;
-  var ogTitle = $('meta[property="og:title"]');
-  if (ogTitle) ogTitle.setAttribute("content", title);
+  var bnAvailable = !!(cfg.bn && typeof cfg.bn === "object" && !Array.isArray(cfg.bn));
+  var lang = "en";
+  var t = UI.en;       // current UI strings
+  var c = cfg;         // current content config (English, or merged with cfg.bn)
+  var revealIO = null; // created lazily by observeReveal()
+
+  function isPlainObject(o) {
+    return !!o && typeof o === "object" && !Array.isArray(o);
+  }
+
+  // Merge the Bangla mirror over the English config. Plain objects merge
+  // key by key (a bn block may localise only some fields); arrays replace.
+  function deepMerge(base, over) {
+    var out = Array.isArray(base) ? base.slice() : Object.assign({}, base);
+    Object.keys(over).forEach(function (k) {
+      out[k] = isPlainObject(base && base[k]) && isPlainObject(over[k])
+        ? deepMerge(base[k], over[k])
+        : over[k];
+    });
+    return out;
+  }
+
+  // Localise generated numerals (countdown, footer date) to Bangla digits.
+  function L(value) {
+    var s = String(value);
+    if (lang !== "bn") return s;
+    return s.replace(/[0-9]/g, function (d) { return BN_DIGITS[+d]; });
+  }
+
+  function initialLang() {
+    if (!bnAvailable) return "en";
+    try {
+      var saved = localStorage.getItem(LANG_KEY);
+      if (saved === "bn" || saved === "en") return saved;
+    } catch (e) { /* storage unavailable (private mode etc.) */ }
+    var nav = (navigator.languages && navigator.languages[0]) || navigator.language || "";
+    return String(nav).toLowerCase().indexOf("bn") === 0 ? "bn" : "en";
+  }
+
+  function setLang(next, persist) {
+    lang = UI[next] ? next : "en";
+    t = UI[lang];
+    c = (lang === "bn" && bnAvailable) ? deepMerge(cfg, cfg.bn) : cfg;
+    if (persist) {
+      try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* ignore */ }
+    }
+    applyLanguage();
+  }
+
+  /* ============ 1. Hydrate content slots ============ */
+  function hydrateContent() {
+    var slots = {
+      "data-initials": c.couple.initials,
+      "data-name1": c.couple.name1,
+      "data-name2": c.couple.name2,
+      "data-date-display": c.dateDisplay,
+      "data-city": c.city,
+      "data-blessing": c.blessing,
+      "data-welcome-eyebrow": c.welcome.eyebrow,
+      "data-parents1": c.welcome.parents1,
+      "data-parents2": c.welcome.parents2,
+      "data-invite-line": c.welcome.inviteLine,
+      "data-countdown-note": c.countdownNote,
+      "data-venue-name": c.venue.name,
+      "data-venue-address": (c.venue.address || ""),
+      "data-closing": c.closing,
+      "data-footer-names": c.couple.name1 + " " + t.nameSep + " " + c.couple.name2,
+      "data-footer-date": L(formatDateShort()) + " \u00B7 " + c.city.replace(/,.*/, ""),
+      "data-hashtag": c.couple.hashtag,
+      "data-credit": c.credit,
+    };
+
+    Object.keys(slots).forEach(function (attr) {
+      var el = $("[" + attr + "]");
+      if (el) el.textContent = slots[attr];
+    });
+
+    // Document title & social meta follow the couple and the language.
+    var title = c.couple.name1 + " " + t.nameSep + " " + c.couple.name2 + " \u2014 " + t.documentTitleSuffix;
+    document.title = title;
+    var ogTitle = $('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute("content", title);
+  }
+
+  // Swap every language-dependent piece of the page in one pass.
+  function applyLanguage() {
+    document.documentElement.lang = lang;
+    $$("[data-i18n]").forEach(function (el) {
+      var v = t[el.getAttribute("data-i18n")];
+      if (typeof v === "string") el.textContent = v;
+    });
+    $$("[data-i18n-html]").forEach(function (el) {
+      var v = t[el.getAttribute("data-i18n-html")];
+      if (typeof v === "string") el.innerHTML = v;
+    });
+    $$("[data-i18n-aria]").forEach(function (el) {
+      var v = t[el.getAttribute("data-i18n-aria")];
+      if (typeof v === "string") el.setAttribute("aria-label", v);
+    });
+    $$("[data-i18n-title]").forEach(function (el) {
+      var v = t[el.getAttribute("data-i18n-title")];
+      if (typeof v === "string") el.setAttribute("title", v);
+    });
+    var toastEl = $("#toast");
+    if (toastEl) toastEl.textContent = t.linkCopied;
+    hydrateContent();
+    renderEvents();
+    fitNames();
+    updateToggleUI();
+    // Re-render countdown digits immediately (e.g. ৪২ vs 42); no-op before
+    // the countdown section has initialised.
+    if (typeof refreshCountdown === "function") refreshCountdown();
+  }
 
   /* Keep each name on a single line: shrink the script font until it fits
      the arch. Below 18px, give up and allow wrapping (very long names). */
@@ -62,7 +220,6 @@
       if (el.scrollWidth > max) el.style.whiteSpace = "";
     });
   }
-  fitNames();
   window.addEventListener("resize", fitNames);
 
   function formatDateShort() {
@@ -79,8 +236,21 @@
   };
 
   var list = $("#eventList");
-  if (list && cfg.events && cfg.events.length) {
-    list.innerHTML = cfg.events.map(renderEvent).join("");
+
+  function renderEvents() {
+    if (!list) return;
+    if (!c.events || !c.events.length) { list.innerHTML = ""; return; }
+    // If the current cards were already revealed, re-rendered ones appear
+    // instantly instead of animating in a second time.
+    var cards = $$(".event-card");
+    var alreadyIn = cards.length > 0 && cards.every(function (el) {
+      return el.classList.contains("is-in");
+    });
+    list.innerHTML = c.events.map(renderEvent).join("");
+    $$(".event-card").forEach(function (el) {
+      if (alreadyIn) el.classList.add("is-in");
+      else observeReveal(el);
+    });
   }
 
   function renderEvent(ev) {
@@ -93,14 +263,14 @@
       (ev.tagline ? '<p class="event-card__tagline">' + esc(ev.tagline) + "</p>" : "") +
       '<div class="event-card__divider" aria-hidden="true"></div>' +
       '<dl class="event-card__rows">' +
-      row(ICONS.date, "Date", ev.date) +
-      row(ICONS.time, "Time", ev.time) +
-      row(ICONS.pin, "Venue", ev.venue) +
-      (ev.address ? row('<span class="row__dot" aria-hidden="true"></span>', "Address", ev.address) : "") +
+      row(ICONS.date, t.labelDate, ev.date) +
+      row(ICONS.time, t.labelTime, ev.time) +
+      row(ICONS.pin, t.labelVenue, ev.venue) +
+      (ev.address ? row('<span class="row__dot" aria-hidden="true"></span>', t.labelAddress, ev.address) : "") +
       "</dl>" +
       '<div class="event-card__actions">' +
-      '<a class="link-btn" href="' + mapUrl + '" target="_blank" rel="noopener">View on Map \u2197</a>' +
-      (calUrl ? '<a class="link-btn link-btn--calendar" href="' + calUrl + '" target="_blank" rel="noopener">Add to Calendar \u2197</a>' : "") +
+      '<a class="link-btn" href="' + mapUrl + '" target="_blank" rel="noopener">' + esc(t.viewOnMap) + "</a>" +
+      (calUrl ? '<a class="link-btn link-btn--calendar" href="' + calUrl + '" target="_blank" rel="noopener">' + esc(t.addToCalendar) + "</a>" : "") +
       "</div></article>"
     );
   }
@@ -115,9 +285,9 @@
     var end = ev.calDate.replace(/-/g, "") + "T" + ev.calEnd.replace(":", "") + "00";
     var params = {
       action: "TEMPLATE",
-      text: cfg.couple.name1 + " & " + cfg.couple.name2 + " \u2014 " + ev.name,
+      text: c.couple.name1 + " " + t.nameSep + " " + c.couple.name2 + " \u2014 " + ev.name,
       dates: start + "/" + end,
-      details: "We would be honoured by your presence. " + cfg.couple.hashtag,
+      details: t.calendarDetails.replace("{hashtag}", c.couple.hashtag),
       location: [ev.venue, ev.address].filter(Boolean).join(", "),
     };
     if (ev.calTz) params.ctz = ev.calTz;
@@ -146,9 +316,35 @@
     }
   });
 
+  /* ============ 4. Language init + EN/বাং toggle ============ */
+  var langToggle = $("#langToggle");
+
+  function updateToggleUI() {
+    if (!langToggle) return;
+    var enOpt = langToggle.querySelector("[data-lang-opt='en']");
+    var bnOpt = langToggle.querySelector("[data-lang-opt='bn']");
+    if (enOpt) enOpt.classList.toggle("is-active", lang === "en");
+    if (bnOpt) bnOpt.classList.toggle("is-active", lang === "bn");
+    langToggle.setAttribute("aria-label", t.switchTo);
+  }
+
+  if (langToggle) {
+    if (bnAvailable) {
+      langToggle.addEventListener("click", function () {
+        setLang(lang === "bn" ? "en" : "bn", true);
+      });
+    } else {
+      // No Bangla content configured — hide the toggle, English-only site.
+      langToggle.hidden = true;
+    }
+  }
+
+  setLang(initialLang(), false);
+
   /* ============ 4. Countdown ============ */
   var target = new Date(cfg.weddingDateTime).getTime();
   var elD = $("#cdDays"), elH = $("#cdHours"), elM = $("#cdMinutes"), elS = $("#cdSeconds");
+  var refreshCountdown = null; // language swaps call this to re-render digits
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
 
@@ -165,12 +361,13 @@
   function tick() {
     var diff = target - Date.now();
     var done = diff <= 0;
-    setNum(elD, done ? "00" : pad(Math.floor(diff / 864e5)));
-    setNum(elH, done ? "00" : pad(Math.floor(diff / 36e5) % 24));
-    setNum(elM, done ? "00" : pad(Math.floor(diff / 6e4) % 60));
-    setNum(elS, done ? "00" : pad(Math.floor(diff / 1e3) % 60));
+    setNum(elD, done ? L("00") : L(pad(Math.floor(diff / 864e5))));
+    setNum(elH, done ? L("00") : L(pad(Math.floor(diff / 36e5) % 24)));
+    setNum(elM, done ? L("00") : L(pad(Math.floor(diff / 6e4) % 60)));
+    setNum(elS, done ? L("00") : L(pad(Math.floor(diff / 1e3) % 60)));
   }
   if (!isNaN(target)) {
+    refreshCountdown = tick;
     tick();
     setInterval(tick, 1000);
   }
@@ -190,8 +387,10 @@
   function share() {
     var data = {
       title: document.title,
-      text: "You\u2019re invited \u2014 " + cfg.couple.name1 + " & " + cfg.couple.name2 +
-        " \u00B7 " + cfg.dateDisplay + " \u00B7 " + cfg.city,
+      text: t.shareText
+        .replace("{names}", c.couple.name1 + " " + t.nameSep + " " + c.couple.name2)
+        .replace("{date}", c.dateDisplay)
+        .replace("{city}", c.city),
       url: location.origin === "null" || location.protocol === "file:"
         ? "https://your-invite-link.example"
         : location.href,
@@ -202,7 +401,7 @@
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(data.url).then(
-        function () { showToast("Link copied to clipboard"); },
+        function () { showToast(t.linkCopied); },
         function () { fallbackCopy(data.url); }
       );
       return;
@@ -220,7 +419,7 @@
     ta.select();
     try {
       document.execCommand("copy");
-      showToast("Link copied to clipboard");
+      showToast(t.linkCopied);
     } catch (e) {
       showToast(text);
     }
@@ -246,23 +445,32 @@
   }
 
   /* ============ 7. Reveal on scroll ============ */
-  var revealables = $$(".reveal");
+  function observeReveal(el) {
+    if (!("IntersectionObserver" in window) || prefersReducedMotion()) {
+      el.classList.add("is-in");
+      return;
+    }
+    if (!revealIO) {
+      revealIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-in");
+            revealIO.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" });
+    }
+    revealIO.observe(el);
+  }
+
   if ("IntersectionObserver" in window && !prefersReducedMotion()) {
     // Tag major blocks progressively.
     [".welcome", ".countdown__panel", ".event-card", ".venue__info", ".venue__frame"].forEach(function (sel) {
       $$(sel).forEach(function (el) { el.classList.add("reveal"); });
     });
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting) {
-          e.target.classList.add("is-in");
-          io.unobserve(e.target);
-        }
-      });
-    }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" });
-    $$(".reveal").forEach(function (el) { io.observe(el); });
+    $$(".reveal").forEach(observeReveal);
   } else {
-    revealables.forEach(function (el) { el.classList.add("is-in"); });
+    $$(".reveal").forEach(function (el) { el.classList.add("is-in"); });
   }
 
   /* ============ 8. Ink-in the scroll ornaments ============
